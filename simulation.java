@@ -61,32 +61,25 @@ public class simulation extends JPanel implements ActionListener {
 
     public void move_particles() {
         for (particles p : particlesList) {
-            if (p.no_collision()) {
-                p.particle_movement();
-            }
-            else {
-                p.bounce();
-            }
-
+            p.applyGravity(); // Apply gravity first
+            p.bounce(); // Then check for bounces
+            p.particles_collision(particlesList); // Check for collisions off other particles
         }
+        repaint();
     }
+    
+    
 
     private void start_animation() {
-        if (timer == null) { // Prevent creating multiple timers
-            timer = new Timer(20, e -> {
-                if (Spacebar_sate) {
-                    move_particles();
-                    repaint();
-                }
-            });
-        }
+        timer = new Timer(20, e -> {
+            if (Spacebar_sate) {
+            
+                move_particles();
+                repaint();
+            }
+        });
+    
         timer.start();
-    }
-
-    private void stop_animation() {
-        if (timer != null) {
-            timer.stop();
-        }
     }
 
     @Override
@@ -101,16 +94,35 @@ public class simulation extends JPanel implements ActionListener {
             @Override
             public void keyPressed(KeyEvent e) {
                 if (e.getKeyCode() == KeyEvent.VK_SPACE) {
-                    toggle_spacebar_state();
+                    restart_simulation(); // Restart when spacebar is pressed
                 }
             }
         });
     }
-
-    private boolean toggle_spacebar_state() {
-        return Spacebar_sate = !Spacebar_sate;
+    
+    private void restart_simulation() {
+        if (timer != null) {
+            timer.stop(); // Stop current animation
+        }
+    
+        particlesList.clear(); // clear particles
+    
+        // Reinitialize particles 
+        int centerX = 375;
+        int centerY = 275;
+        int radius = 125;
+        int numParticles = 1000;
+    
+        for (int i = 0; i < numParticles; i++) {
+            double angle = 2 * Math.PI * i / numParticles;
+            int x = (int) (centerX + radius * Math.cos(angle));
+            int y = (int) (centerY + radius * Math.sin(angle));
+            store_particles(new particles(x, y));
+        }
+    
+        repaint(); // Refresh display
+        start_animation(); // Restart animation
     }
-
     public static void main(String[] args) {
         simulation a = new simulation();
         a.panel(800, 600);
@@ -120,13 +132,13 @@ public class simulation extends JPanel implements ActionListener {
         int centerX = 375;  // Circle center X
         int centerY = 275;  // Circle center Y
         int radius = 125;   // Circle radius
-        int numParticles = 150; // Number of particles around the circle
+        int numParticles = 200; // Number of particles around the circle
 
         // Distribute particles evenly around the circle
         for (int i = 0; i < numParticles; i++) {
             double angle = 2 * Math.PI * i / numParticles; // Compute angle
-            int x = (int) (centerX + radius * Math.cos(angle));
-            int y = (int) (centerY + radius * Math.sin(angle));
+            int x = (int) (Math.random() * 800); // Compute X position
+            int y = (int) (Math.random() * 600); // Compute Y position
             a.store_particles(new particles(x, y));
         }
 
