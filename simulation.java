@@ -13,6 +13,8 @@ public class simulation extends JPanel implements ActionListener {
     private particles prticle_reference = new particles(10, 10);
     private boolean Spacebar_sate = true;
     private Timer timer;
+    private int preset_counter = 0;
+    private boolean simulation_state = false;
 
     public void panel(int width, int height) { 
         frame = new JFrame("Simulation");
@@ -52,12 +54,19 @@ public class simulation extends JPanel implements ActionListener {
         g.setColor(Color.BLACK);
         g.fillRect(0, 0, getWidth(), getHeight());
 
-        // Draw particles
-        g.setColor(Color.WHITE);
-        for (particles p : particlesList) {
-            g.fillOval(p.getX(), p.getY(), 5, 5);
+        // Check simulation state
+        if (!simulation_state) start_screen(g); // Show the start screen
+        else {
+         
+            UI_description(g);
+
+            // Draw each particle with its color
+            for (particles p : particlesList) {
+                g.setColor(p.get_particle_color());
+                g.fillOval(p.getX(), p.getY(), p.PARTICLE_SIZE, p.PARTICLE_SIZE); 
+            }
         }
-    }
+}
 
     public void move_particles() {
         for (particles p : particlesList) {
@@ -65,10 +74,9 @@ public class simulation extends JPanel implements ActionListener {
             p.bounce(); // Then check for bounces
             p.particles_collision(particlesList); // Check for collisions off other particles
         }
+        prticle_reference.delete_stopped_particles(particlesList); // Delete particles that have stopped moving
         repaint();
     }
-    
-    
 
     private void start_animation() {
         timer = new Timer(20, e -> {
@@ -94,56 +102,105 @@ public class simulation extends JPanel implements ActionListener {
             @Override
             public void keyPressed(KeyEvent e) {
                 if (e.getKeyCode() == KeyEvent.VK_SPACE) {
-                    restart_simulation(); // Restart when spacebar is pressed
+                    if (!simulation_state) {
+                        simulation_state = true;  // Set the flag to start the game
+                        restart_simulation(preset_counter); // Start the simulation with the selected preset
+                        repaint();  // Repaint to update the screen
+                    } else {
+                        preset_counter = (preset_counter + 1) % 3;  // Toggle presets
+                        restart_simulation(preset_counter);
+                    }
+                    repaint();
                 }
             }
         });
     }
     
-    private void restart_simulation() {
+    private void restart_simulation(int preset) {
         if (timer != null) {
             timer.stop(); // Stop current animation
         }
     
-        particlesList.clear(); // clear particles
+        particlesList.clear();
     
-        // Reinitialize particles 
+        preset_selection(preset); // Select preset
+    
+        repaint(); // Refresh display
+        start_animation(); // Restart animation
+    }
+
+    private void preset_selection(int preset) {
+        switch (preset) {
+            case 0:
+                init_circle_particles();
+            break;
+
+            case 1:
+                init_wave_particles();
+            break;
+
+            case 2:
+                init_random_particles();
+            break;
+        }
+    }
+
+    private void UI_description(Graphics g) {
+        g.setColor(Color.WHITE);
+
+        // set font
+        g.setFont(new Font("Arial", Font.ITALIC, 22));
+        g.drawString("Press SPACEBAR to restart", 10, 20);
+
+        g.setFont(new Font("Arial", Font.BOLD, 16));
+        g.setColor(Color.green);
+        g.drawString("Particles: " + particlesList.size(), 650, 20);
+    }
+
+    private void start_screen(Graphics g) {
+        // Display start screen
+        g.setColor(Color.WHITE);
+        g.setFont(new Font("Arial", Font.ITALIC, 32));
+        g.drawString("Press SPACEBAR to start", 200, 300);
+    }
+
+    private void init_circle_particles() {
         int centerX = 375;
         int centerY = 275;
         int radius = 125;
         int numParticles = 1000;
-    
+
         for (int i = 0; i < numParticles; i++) {
             double angle = 2 * Math.PI * i / numParticles;
             int x = (int) (centerX + radius * Math.cos(angle));
             int y = (int) (centerY + radius * Math.sin(angle));
             store_particles(new particles(x, y));
         }
-    
-        repaint(); // Refresh display
-        start_animation(); // Restart animation
+    }
+
+    private void init_wave_particles() {
+        int numParticles = 1000;
+
+        for (int i = 0; i < numParticles; i++) {
+            int x = i;
+            int y = 275 + (int) (50 * Math.sin(i * 0.1));
+            store_particles(new particles(x, y));
+        }
+    }
+
+    private void init_random_particles() {
+        int numParticles = 1000;
+
+        for (int i = 0; i < numParticles; i++) {
+            int x = (int) (Math.random() * 800);
+            int y = (int) (Math.random() * 600);
+            store_particles(new particles(x, y));
+        }
     }
     public static void main(String[] args) {
         simulation a = new simulation();
         a.panel(800, 600);
-        
-        // Particles 
-        // Define circle parameters
-        int centerX = 375;  // Circle center X
-        int centerY = 275;  // Circle center Y
-        int radius = 125;   // Circle radius
-        int numParticles = 200; // Number of particles around the circle
 
-        // Distribute particles evenly around the circle
-        for (int i = 0; i < numParticles; i++) {
-            double angle = 2 * Math.PI * i / numParticles; // Compute angle
-            int x = (int) (Math.random() * 800); // Compute X position
-            int y = (int) (Math.random() * 600); // Compute Y position
-            a.store_particles(new particles(x, y));
-        }
-
-        // Start animation
-        a.start_animation();
         a.spacebar_listen();
             
     }

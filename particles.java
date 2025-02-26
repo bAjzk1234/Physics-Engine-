@@ -1,12 +1,14 @@
+import java.awt.Color;
 import java.util.ArrayList;
 
 class particles {
 
     private int particleX, particleY; // Position of particle
     private double speedX = 0, speedY = 0; // Initial velocity
-    private final double gravity = 0.2; // Gravity acceleration
-    private final double bounce_factor = 0.7; // Energy loss on bounce
-    public final int PARTICLE_SIZE = 5; // Particle size (width/height)
+    private final double gravity = 0.3; // Gravity acceleration
+    private final double bounce_factor = 0.8; // Energy loss on bounce
+    public final int PARTICLE_SIZE = 2; // Particle size (width/height)
+    public Color particle_color; // Color of particle
 
     protected final int FRAME_WIDTH = 800 - 8;  // 800 - 8px for side borders
     protected final int FRAME_HEIGHT = 600 - 30; // 600 - 30px (title bar) - 8px (bottom border)
@@ -14,6 +16,7 @@ class particles {
     public particles(int x, int y) {
         this.particleX = x;
         this.particleY = y;
+        this.particle_color = new Color((int)(Math.random() * 255), (int)(Math.random() * 255), (int)(Math.random() * 255));
     }
 
     public void particle_movement() {
@@ -84,6 +87,27 @@ class particles {
         particleY += (int) speedY;
     }
     
+    public void delete_all_particles(ArrayList<particles> particlesList) {
+        particlesList.clear();
+    }
+
+    public void delete_particle(ArrayList<particles> particlesList, particles p) {
+        particlesList.remove(p);
+    }
+
+    public void delete_stopped_particles(ArrayList<particles> particlesList) {
+        ArrayList<particles> updatedList = new ArrayList<>();
+
+        for (particles p : particlesList) {
+            if (!( (Math.abs(p.speedY) >= 0) && (p.particleY + PARTICLE_SIZE == FRAME_HEIGHT) )) {
+                updatedList.add(p);  // Keep the particles that are not stopped
+            } 
+        }
+        particlesList.clear();  // Clear the original list
+        particlesList.addAll(updatedList);  // Add remaining particles back to the original list
+    }
+    
+
     public int getX() {
         return particleX;
     }
@@ -91,5 +115,8 @@ class particles {
     public int getY() {
         return particleY;
     }
-
+    
+    public Color get_particle_color() {
+        return particle_color;
+    }
 }
