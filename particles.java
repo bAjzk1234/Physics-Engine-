@@ -4,10 +4,10 @@ import java.util.ArrayList;
 class particles {
 
     private int particleX, particleY; // Position of particle
-    private double speedX = 0, speedY = 0; // Initial velocity
+    public double speedX = 0, speedY = 0; // Initial velocity
     private final double gravity = 0.3; // Gravity acceleration
     private final double bounce_factor = 0.8; // Energy loss on bounce
-    public final int PARTICLE_SIZE = 2; // Particle size (width/height)
+    public final int PARTICLE_SIZE = 4; // Particle size (width/height)
     public Color particle_color; // Color of particle
 
     protected final int FRAME_WIDTH = 800 - 8;  // 800 - 8px for side borders

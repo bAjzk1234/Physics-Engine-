@@ -107,7 +107,7 @@ public class simulation extends JPanel implements ActionListener {
                         restart_simulation(preset_counter); // Start the simulation with the selected preset
                         repaint();  // Repaint to update the screen
                     } else {
-                        preset_counter = (preset_counter + 1) % 3;  // Toggle presets
+                        preset_counter = (preset_counter + 1) % 4;  // Toggle presets
                         restart_simulation(preset_counter);
                     }
                     repaint();
@@ -141,6 +141,10 @@ public class simulation extends JPanel implements ActionListener {
 
             case 2:
                 init_random_particles();
+            break;
+
+            case 3:
+                init_square();
             break;
         }
     }
@@ -197,6 +201,23 @@ public class simulation extends JPanel implements ActionListener {
             store_particles(new particles(x, y));
         }
     }
+
+    private void init_square() {
+        int numParticles = 1000;
+        int squareSize = 300;  // Size of the square (width and height)
+        int startX = 225;  // X-coordinate of the top-left corner of the square
+        int startY = 150;  // Y-coordinate of the top-left corner of the square
+    
+        for (int i = 0; i < numParticles; i++) {
+            // Generate random X and Y coordinates within the square
+            int x = startX + (int) (Math.random() * squareSize);  // X between startX and startX + squareSize
+            int y = startY + (int) (Math.random() * squareSize);  // Y between startY and startY + squareSize
+            
+            // Create a new particle and add it to the list
+            store_particles(new particles(x, y));
+        }
+    }
+    
     public static void main(String[] args) {
         simulation a = new simulation();
         a.panel(800, 600);
