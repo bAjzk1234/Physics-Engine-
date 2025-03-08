@@ -5,17 +5,34 @@ class particles {
 
     private int particleX, particleY; // Position of particle
     public double speedX = 0, speedY = 0; // Initial velocity
-    private final double gravity = 0.3; // Gravity acceleration
-    private final double bounce_factor = 0.8; // Energy loss on bounce
-    public final int PARTICLE_SIZE = 4; // Particle size (width/height)
+    private double gravity; // Gravity acceleration
+    private double bounce_factor; // Energy loss on bounce
+    public int PARTICLE_SIZE; // Particle size (width/height)
     public Color particle_color; // Color of particle
+    public int particle_weight;; // Weight of particle
+    private double airResistance;
 
-    protected final int FRAME_WIDTH = 800 - 8;  // 800 - 8px for side borders
-    protected final int FRAME_HEIGHT = 600 - 30; // 600 - 30px (title bar) - 8px (bottom border)
 
+  
     public particles(int x, int y) {
         this.particleX = x;
         this.particleY = y;
+        this.particle_weight = (int) (Math.random() * 20) + 5;
+        this.gravity = determine_gravity();
+        this.bounce_factor = determine_bounceFactor();
+        this.PARTICLE_SIZE = (int) (0.5 * particle_weight);
+        this.airResistance = 0.995 - (PARTICLE_SIZE / 1000.0);
+        this.particle_color = new Color((int)(Math.random() * 255), (int)(Math.random() * 255), (int)(Math.random() * 255));
+    }
+
+    public particles(int x, int y, int size) {
+        this.particleX = x;
+        this.particleY = y;
+        this.particle_weight = (int) (Math.random() * 20) + 5;
+        this.gravity = determine_gravity();
+        this.bounce_factor = determine_bounceFactor();
+        this.PARTICLE_SIZE = (int) (size * 0.1 * particle_weight);
+        this.airResistance = 0.995 - (PARTICLE_SIZE / 1000.0);
         this.particle_color = new Color((int)(Math.random() * 255), (int)(Math.random() * 255), (int)(Math.random() * 255));
     }
 
@@ -25,68 +42,95 @@ class particles {
         particleY += speedY;
     }
 
-    public boolean no_collision() {
-        // Check if particle is within bounds
-        return particleX >= 0 && particleX + PARTICLE_SIZE<= FRAME_WIDTH && particleY >= 0 && particleY + PARTICLE_SIZE <= FRAME_HEIGHT;
+    
+    private double determine_gravity() {
+        return 0.05 * particle_weight; // More weight means stronger gravity
     }
 
-    public void applyGravity() {
-        speedY += gravity; // Apply gravity acceleration
-        particleY += (int) speedY; // Cast accerlation to position
+    private double determine_bounceFactor() {
+        return Math.max(0.5, 1.5/ particle_weight); // More weight means less bounce
     }
 
-    public void particles_collision(ArrayList<particles> particlesList) {
+    public void apply_gravity() {
+        speedY += gravity;
+        speedY *= airResistance; // Apply air resistance
+        particleY += (int) speedY;
 
-        // Bounce particle off each other 
-        for (particles p : particlesList) {
-
-            if (p != this) {    // No collision with itself
-
-                // Calculate distance between particles
-                int dx = p.getX() - particleX;
-                int dy = p.getY() - particleY;
-                double distance = Math.sqrt(dx * dx + dy * dy);
-
-                // If distance is less than particle size, bounce off
-                if (distance < PARTICLE_SIZE) {
-
-                    // Calculate angle between particles by using arctan
-                    double angle = Math.atan2(dy, dx);
-
-                    // Calculate target position for both particles
-                    double targetX = particleX + Math.cos(angle) * PARTICLE_SIZE;
-                    double targetY = particleY + Math.sin(angle) * PARTICLE_SIZE;
-
-                    // Calculate acceleration for both particles
-                    double ax = (targetX - p.getX()) * 0.01;
-                    double ay = (targetY - p.getY()) * 0.01;
-
-                    speedX -= ax;
-                    speedY -= ay;
-                    p.speedX += ax;
-                    p.speedY += ay;
-                }
+        // Soft ground effect
+        if (particleY + PARTICLE_SIZE >= Constants.FRAME_HEIGHT) {
+            speedY = -speedY * bounce_factor;
+            speedX *= 0.9; // Ground friction
+            if (Math.abs(speedY) < 1) {
+                particleY += 1; // Simulate slight sinking effect
             }
         }
     }
 
+    public boolean no_collision() {
+        // Check if particle is within bounds
+        return particleX >= 0 && particleX + PARTICLE_SIZE<= Constants.FRAME_WIDTH && particleY >= 0 && particleY + PARTICLE_SIZE <= Constants.FRAME_HEIGHT;
+    }
+
+    public void particles_collision(ArrayList<particles> particlesList) {
+        for (particles p : particlesList) {
+            if (p != this) {
+                int dx = p.getX() - particleX;
+                int dy = p.getY() - particleY;
+                double distance = Math.sqrt(dx * dx + dy * dy);
+    
+                if (distance < PARTICLE_SIZE) {
+                    // Calculate angle between particles
+                    double angle = Math.atan2(dy, dx);
+    
+                    // Compute velocity components along normal and tangent
+                    double v1n = speedX * Math.cos(angle) + speedY * Math.sin(angle);
+                    double v2n = p.speedX * Math.cos(angle) + p.speedY * Math.sin(angle);
+    
+                    // Swap velocities (elastic collision)
+                    double temp = v1n;
+                    v1n = v2n;
+                    v2n = temp;
+    
+                    // Convert back to X and Y
+                    speedX = v1n * Math.cos(angle);
+                    speedY = v1n * Math.sin(angle);
+                    p.speedX = v2n * Math.cos(angle);
+                    p.speedY = v2n * Math.sin(angle);
+                }
+            }
+        }
+    }
+    
+    
     public void bounce() {
         int nextX = particleX + (int) speedX;
         int nextY = particleY + (int) speedY;
-    
-        // Reverse direction if out of bounds
-        if (nextX < 0 || nextX + PARTICLE_SIZE > FRAME_WIDTH) {
-            speedX = -speedX;
+
+        if (nextX < 0 || nextX + PARTICLE_SIZE > Constants.FRAME_WIDTH) {
+            speedX = -speedX * bounce_factor;
         }
-        if (nextY < 0 || nextY + PARTICLE_SIZE > FRAME_HEIGHT) {
-            speedY = -speedY * bounce_factor; // Reduce speed when bouncing off ground
-            particleY = FRAME_HEIGHT - PARTICLE_SIZE; // Ensure it stays within bounds
+
+        if (nextY + PARTICLE_SIZE >= Constants.FRAME_HEIGHT) {
+            particleY = Constants.FRAME_HEIGHT - PARTICLE_SIZE;
+            double bounceAngle = Math.toRadians(30 + Math.random() * 30);
+            double speed = Math.sqrt(speedX * speedX + speedY * speedY) * bounce_factor;
+            if (Math.random() > 0.5) {
+                speedX = speed * Math.cos(bounceAngle);
+            } else {
+                speedX = -speed * Math.cos(bounceAngle);
+            }
+            speedY = -speed * Math.sin(bounceAngle);
+            speedX *= 0.9;
         }
-    
+
+        if (nextY < 0) {
+            speedY = -speedY * bounce_factor;
+        }
+
         particleX += (int) speedX;
         particleY += (int) speedY;
     }
-    
+
     public void delete_all_particles(ArrayList<particles> particlesList) {
         particlesList.clear();
     }
@@ -97,17 +141,64 @@ class particles {
 
     public void delete_stopped_particles(ArrayList<particles> particlesList) {
         ArrayList<particles> updatedList = new ArrayList<>();
-
+    
         for (particles p : particlesList) {
-            if (!( (Math.abs(p.speedY) >= 0) && (p.particleY + PARTICLE_SIZE == FRAME_HEIGHT) )) {
-                updatedList.add(p);  // Keep the particles that are not stopped
-            } 
+            boolean is_stopped = Math.abs(p.speedY) < 0.2 && p.particleY + p.PARTICLE_SIZE >= Constants.FRAME_HEIGHT - 1;
+            boolean out_of_bounds = p.getX() < -p.PARTICLE_SIZE || p.getX() > Constants.FRAME_WIDTH + p.PARTICLE_SIZE || p.getY() < -p.PARTICLE_SIZE || p.getY() > Constants.FRAME_HEIGHT + p.PARTICLE_SIZE;
+    
+            if (!is_stopped && !out_of_bounds) {
+                updatedList.add(p); // Keep particles that are still in motion and within bounds
+            }
         }
-        particlesList.clear();  // Clear the original list
-        particlesList.addAll(updatedList);  // Add remaining particles back to the original list
+        
+        particlesList.clear();  // Clear original list
+        particlesList.addAll(updatedList);  // Add only remaining particles
     }
     
+    
 
+    public void force_gravity(solid solidObject) {
+        boolean isBelowSolid = particleY >= solidObject.getSolidY() + solidObject.getHeight();
+        boolean isAboveSolid = particleY + PARTICLE_SIZE <= solidObject.getSolidY(); // Particle is above the solid
+        boolean isWithinXBounds = particleX + PARTICLE_SIZE > solidObject.getSolidX() && particleX < solidObject.getSolidX() + solidObject.getWidth();
+
+        // Particles BELOW the solid (pushed down)
+        if (isBelowSolid && isWithinXBounds && solidObject.get_weight() > this.getWeight()) {
+            if (solidObject.getSpeedY() > 0) {
+                speedY = solidObject.getSpeedY(); // Move down with the solid
+            } else {
+                int solidCenter = solidObject.getSolidX() + (solidObject.getWidth() / 2);
+                
+                if (particleX < solidCenter) {
+                    speedX -= Math.abs(speedX) + 0.5; // Move left
+                } else {
+                    speedX += Math.abs(speedX) + 0.5; // Move right
+                }
+                
+                speedY = Math.abs(gravity) * 0.5; // Fall slowly
+            }
+        }
+
+        // Particles ON TOP of the solid (slide off the edges)
+        if (isAboveSolid && isWithinXBounds) {
+            if (solidObject.getSpeedY() > 0) {
+                speedY = solidObject.getSpeedY(); // Move with the solid
+            } else {
+                int solidCenter = solidObject.getSolidX() + (solidObject.getWidth() / 2);
+                
+                if (particleX < solidCenter) {
+                    speedX -= Math.abs(speedX) + 0.5; // Move left
+                } else {
+                    speedX += Math.abs(speedX) + 0.5; // Move right
+                }
+                
+                speedY = Math.abs(gravity) * 0.2; // Slight downward motion for natural movement
+            }
+        }
+
+    }
+    
+    
     public int getX() {
         return particleX;
     }
@@ -118,5 +209,9 @@ class particles {
     
     public Color get_particle_color() {
         return particle_color;
+    }
+
+    public int getWeight() {
+        return particle_weight;
     }
 }

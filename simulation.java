@@ -10,11 +10,13 @@ public class simulation extends JPanel implements ActionListener {
 
     private JFrame frame;
     private ArrayList<particles> particlesList = new ArrayList<>(); // ArrayList to store particles
+    private ArrayList<solid> active_solids = new ArrayList<>(); // ArrayList to store solids
     private particles prticle_reference = new particles(10, 10);
     private boolean Spacebar_sate = true;
     private Timer timer;
     private int preset_counter = 0;
     private boolean simulation_state = false;
+    
 
     public void panel(int width, int height) { 
         frame = new JFrame("Simulation");
@@ -60,6 +62,12 @@ public class simulation extends JPanel implements ActionListener {
          
             UI_description(g);
 
+           // Draw all solids in the preset
+            g.setColor(Color.RED);
+            for (solid s : active_solids) {
+                g.fillRect(s.getSolidX(), s.getSolidY(), s.getWidth(), s.getHeight());
+            }
+
             // Draw each particle with its color
             for (particles p : particlesList) {
                 g.setColor(p.get_particle_color());
@@ -70,10 +78,21 @@ public class simulation extends JPanel implements ActionListener {
 
     public void move_particles() {
         for (particles p : particlesList) {
-            p.applyGravity(); // Apply gravity first
+            p.apply_gravity(); // Apply gravity first
             p.bounce(); // Then check for bounces
-            p.particles_collision(particlesList); // Check for collisions off other particles
+
+            for (solid s : active_solids) {
+                s.reactTo_particle_collision(p); // Check for collisions with particles if they weigh more than the solid
+                //p.force_gravity(s); // Apply gravity to particles if solid is pushing them down
+            }
         }
+
+        // Apply movement to all solids
+        for (solid s : active_solids) {
+        s.apply_gravity();
+        s.bounce();
+        }
+
         prticle_reference.delete_stopped_particles(particlesList); // Delete particles that have stopped moving
         repaint();
     }
@@ -107,7 +126,7 @@ public class simulation extends JPanel implements ActionListener {
                         restart_simulation(preset_counter); // Start the simulation with the selected preset
                         repaint();  // Repaint to update the screen
                     } else {
-                        preset_counter = (preset_counter + 1) % 4;  // Toggle presets
+                        preset_counter = (preset_counter + 1) % 3;  // Toggle presets
                         restart_simulation(preset_counter);
                     }
                     repaint();
@@ -122,7 +141,8 @@ public class simulation extends JPanel implements ActionListener {
         }
     
         particlesList.clear();
-    
+        active_solids.clear(); 
+          
         preset_selection(preset); // Select preset
     
         repaint(); // Refresh display
@@ -132,19 +152,15 @@ public class simulation extends JPanel implements ActionListener {
     private void preset_selection(int preset) {
         switch (preset) {
             case 0:
-                init_circle_particles();
+                init_circle_presets();
             break;
 
             case 1:
-                init_wave_particles();
+                init_wave_preset();
             break;
 
             case 2:
-                init_random_particles();
-            break;
-
-            case 3:
-                init_square();
+                init_random_preset();
             break;
         }
     }
@@ -168,22 +184,29 @@ public class simulation extends JPanel implements ActionListener {
         g.drawString("Press SPACEBAR to start", 200, 300);
     }
 
-    private void init_circle_particles() {
+    private void init_circle_presets() {
         int centerX = 375;
         int centerY = 275;
         int radius = 125;
         int numParticles = 1000;
-
+       
         for (int i = 0; i < numParticles; i++) {
             double angle = 2 * Math.PI * i / numParticles;
             int x = (int) (centerX + radius * Math.cos(angle));
             int y = (int) (centerY + radius * Math.sin(angle));
             store_particles(new particles(x, y));
         }
+
     }
 
-    private void init_wave_particles() {
+    private void init_wave_preset() {
         int numParticles = 1000;
+
+        // create solid objects
+        /*solid rectangle = new solid(400, 50,50, 50, 200); 
+        solid rectangle2 = new solid(100, 200,50,50,200);
+        active_solids.add(rectangle);
+        active_solids.add(rectangle2);*/
 
         for (int i = 0; i < numParticles; i++) {
             int x = i;
@@ -192,28 +215,24 @@ public class simulation extends JPanel implements ActionListener {
         }
     }
 
-    private void init_random_particles() {
+    private void init_random_preset() {
         int numParticles = 1000;
+
+        // create solid objects
+        solid rectangle = new solid(200, 50,50, 50, 200); 
+        solid rectangle2 = new solid(500,50,50,50,200);
+        solid rectangle3 = new solid(350, 200,50,50,200);
+        solid rectangle4 = new solid(100, 300,50,50,200);
+        solid rectangle5 = new solid(600, 300,50,50,200);
+        active_solids.add(rectangle);
+        active_solids.add(rectangle2);
+        active_solids.add(rectangle3);
+        active_solids.add(rectangle4);
+        active_solids.add(rectangle5);
 
         for (int i = 0; i < numParticles; i++) {
             int x = (int) (Math.random() * 800);
             int y = (int) (Math.random() * 600);
-            store_particles(new particles(x, y));
-        }
-    }
-
-    private void init_square() {
-        int numParticles = 1000;
-        int squareSize = 300;  // Size of the square (width and height)
-        int startX = 225;  // X-coordinate of the top-left corner of the square
-        int startY = 150;  // Y-coordinate of the top-left corner of the square
-    
-        for (int i = 0; i < numParticles; i++) {
-            // Generate random X and Y coordinates within the square
-            int x = startX + (int) (Math.random() * squareSize);  // X between startX and startX + squareSize
-            int y = startY + (int) (Math.random() * squareSize);  // Y between startY and startY + squareSize
-            
-            // Create a new particle and add it to the list
             store_particles(new particles(x, y));
         }
     }
