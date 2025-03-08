@@ -16,6 +16,7 @@ public class simulation extends JPanel implements ActionListener {
     private Timer timer;
     private int preset_counter = 0;
     private boolean simulation_state = false;
+    public boolean slowmotion = false;
     
 
     public void panel(int width, int height) { 
@@ -82,8 +83,7 @@ public class simulation extends JPanel implements ActionListener {
             p.bounce(); // Then check for bounces
 
             for (solid s : active_solids) {
-                s.reactTo_particle_collision(p); // Check for collisions with particles if they weigh more than the solid
-                //p.force_gravity(s); // Apply gravity to particles if solid is pushing them down
+                p.force_gravity(s); // Apply gravity to particles if solid is pushing them down
             }
         }
 
@@ -98,6 +98,8 @@ public class simulation extends JPanel implements ActionListener {
     }
 
     private void start_animation() {
+
+        if(!slowmotion){
         timer = new Timer(20, e -> {
             if (Spacebar_sate) {
             
@@ -107,6 +109,18 @@ public class simulation extends JPanel implements ActionListener {
         });
     
         timer.start();
+        }
+        else{
+            timer = new Timer(200, e -> {
+                if (Spacebar_sate) {
+                
+                    move_particles();
+                    repaint();
+                }
+            });
+        
+            timer.start();
+        }
     }
 
     @Override
@@ -117,6 +131,7 @@ public class simulation extends JPanel implements ActionListener {
     private void spacebar_listen() {
         this.setFocusable(true);
         this.requestFocusInWindow(); // Ensure panel gets focus
+
         this.addKeyListener(new KeyAdapter() {
             @Override
             public void keyPressed(KeyEvent e) {
@@ -134,7 +149,27 @@ public class simulation extends JPanel implements ActionListener {
             }
         });
     }
-    
+
+    private void tab_listen() {
+        this.setFocusable(true);
+        this.requestFocusInWindow(); // Ensure panel gets focus
+
+        this.addKeyListener(new KeyAdapter() {
+            @Override
+            public void keyPressed(KeyEvent e) {
+                if (e.getKeyCode() == KeyEvent.VK_X) {
+                    slowmotion = !slowmotion;
+
+                    if (timer != null) {
+                        timer.stop(); // Stop the old timer
+                    }
+                    
+                    start_animation(); // Restart the animation with new speed
+                }
+            }
+        });
+    }
+
     private void restart_simulation(int preset) {
         if (timer != null) {
             timer.stop(); // Stop current animation
@@ -168,13 +203,18 @@ public class simulation extends JPanel implements ActionListener {
     private void UI_description(Graphics g) {
         g.setColor(Color.WHITE);
 
-        // set font
+        // Right side descriptions
         g.setFont(new Font("Arial", Font.ITALIC, 22));
-        g.drawString("Press SPACEBAR to restart", 10, 20);
+        g.drawString("Press SPACEBAR To Testart", 10, 20);
 
+        g.setFont(new Font("Arial", Font.ITALIC, 20));
+        g.drawString("Press X To Toggle Slowmotion", 10, 50);
+
+        // Left side descriptions
         g.setFont(new Font("Arial", Font.BOLD, 16));
         g.setColor(Color.green);
         g.drawString("Particles: " + particlesList.size(), 650, 20);
+
     }
 
     private void start_screen(Graphics g) {
@@ -238,10 +278,12 @@ public class simulation extends JPanel implements ActionListener {
     }
     
     public static void main(String[] args) {
+
+        // Create a new simulation object to call methods
         simulation a = new simulation();
         a.panel(800, 600);
-
         a.spacebar_listen();
+        a.tab_listen();
             
     }
 }

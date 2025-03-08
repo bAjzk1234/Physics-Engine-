@@ -13,7 +13,6 @@ class particles {
     private double airResistance;
 
 
-  
     public particles(int x, int y) {
         this.particleX = x;
         this.particleY = y;
@@ -21,7 +20,7 @@ class particles {
         this.gravity = determine_gravity();
         this.bounce_factor = determine_bounceFactor();
         this.PARTICLE_SIZE = (int) (0.5 * particle_weight);
-        this.airResistance = 0.995 - (PARTICLE_SIZE / 1000.0);
+        this.airResistance = 0.995 - (PARTICLE_SIZE / 1000);
         this.particle_color = new Color((int)(Math.random() * 255), (int)(Math.random() * 255), (int)(Math.random() * 255));
     }
 
@@ -32,7 +31,7 @@ class particles {
         this.gravity = determine_gravity();
         this.bounce_factor = determine_bounceFactor();
         this.PARTICLE_SIZE = (int) (size * 0.1 * particle_weight);
-        this.airResistance = 0.995 - (PARTICLE_SIZE / 1000.0);
+        this.airResistance = 0.995 - (PARTICLE_SIZE / 1000);
         this.particle_color = new Color((int)(Math.random() * 255), (int)(Math.random() * 255), (int)(Math.random() * 255));
     }
 
@@ -99,8 +98,7 @@ class particles {
                 }
             }
         }
-    }
-    
+    }    
     
     public void bounce() {
         int nextX = particleX + (int) speedX;
@@ -154,50 +152,20 @@ class particles {
         particlesList.clear();  // Clear original list
         particlesList.addAll(updatedList);  // Add only remaining particles
     }
-    
-    
 
     public void force_gravity(solid solidObject) {
-        boolean isBelowSolid = particleY >= solidObject.getSolidY() + solidObject.getHeight();
-        boolean isAboveSolid = particleY + PARTICLE_SIZE <= solidObject.getSolidY(); // Particle is above the solid
-        boolean isWithinXBounds = particleX + PARTICLE_SIZE > solidObject.getSolidX() && particleX < solidObject.getSolidX() + solidObject.getWidth();
 
-        // Particles BELOW the solid (pushed down)
-        if (isBelowSolid && isWithinXBounds && solidObject.get_weight() > this.getWeight()) {
-            if (solidObject.getSpeedY() > 0) {
-                speedY = solidObject.getSpeedY(); // Move down with the solid
-            } else {
-                int solidCenter = solidObject.getSolidX() + (solidObject.getWidth() / 2);
-                
-                if (particleX < solidCenter) {
-                    speedX -= Math.abs(speedX) + 0.5; // Move left
-                } else {
-                    speedX += Math.abs(speedX) + 0.5; // Move right
-                }
-                
-                speedY = Math.abs(gravity) * 0.5; // Fall slowly
+        if (solidObject.check_particle_under_collision(this)) {
+            if(particleY + PARTICLE_SIZE >= Constants.FRAME_HEIGHT) {
+                particleY = Constants.FRAME_HEIGHT - PARTICLE_SIZE;
+                speedY = 0;
+            }
+            else{
+                particleY = solidObject.getSolidY() + PARTICLE_SIZE;
+                speedY += 2*solidObject.getSpeedY();
             }
         }
-
-        // Particles ON TOP of the solid (slide off the edges)
-        if (isAboveSolid && isWithinXBounds) {
-            if (solidObject.getSpeedY() > 0) {
-                speedY = solidObject.getSpeedY(); // Move with the solid
-            } else {
-                int solidCenter = solidObject.getSolidX() + (solidObject.getWidth() / 2);
-                
-                if (particleX < solidCenter) {
-                    speedX -= Math.abs(speedX) + 0.5; // Move left
-                } else {
-                    speedX += Math.abs(speedX) + 0.5; // Move right
-                }
-                
-                speedY = Math.abs(gravity) * 0.2; // Slight downward motion for natural movement
-            }
-        }
-
     }
-    
     
     public int getX() {
         return particleX;

@@ -58,19 +58,14 @@ public class solid {
     }
 
     // Check for collision with particles
-    public boolean check_collision(particles p) {
+    public boolean check_particles_over_collison(particles p) {
         return (p.getX() + p.PARTICLE_SIZE > solidX && p.getX() < solidX + width && p.getY() + p.PARTICLE_SIZE > solidY && p.getY() < solidY + height);
     }
 
-    public void reactTo_particle_collision(particles p) {
-        if (check_collision(p) && weight < p.getWeight()) {
-            p.speedY = -p.speedY * bounce_factor; // Reverse particle's Y speed
-            this.speedY -= gravity / 2; // Move solid upwards slightly
-    
-            // Move solid in the direction of the particle
-            this.speedX += p.speedX * 0.3;
-        }
+    public boolean check_particle_under_collision(particles p) {
+        return (p.getX() + p.PARTICLE_SIZE > solidX && p.getX() < solidX + width && p.getY() + p.PARTICLE_SIZE > solidY && p.getY() < solidY + height);
     }
+
 
     public boolean check_ground_state() {
         return solidY  != Frame.HEIGHT;
